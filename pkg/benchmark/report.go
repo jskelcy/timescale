@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/montanaflynn/stats"
@@ -16,94 +17,53 @@ const (
 )
 
 type report struct {
-	reqs          []requestInfo
+	sync.Mutex
+	vals          stats.Float64Data
 	totalDuration time.Duration
+	min           time.Duration
+	max           time.Duration
 }
 
-func (r report) minDuration() requestInfo {
-	min := requestInfo{Duration: maxDuration}
-	for _, info := range r.reqs {
-		if info.Duration < min.Duration {
-			min = info
-		}
+func NewReport() *report {
+	return &report{
+		vals: stats.Float64Data{},
+		min:  maxDuration,
+		max:  minDuration,
 	}
-	return min
 }
 
-func (r report) maxDuration() requestInfo {
-	min := requestInfo{Duration: minDuration}
-	for _, info := range r.reqs {
-		if info.Duration > min.Duration {
-			min = info
-		}
+func (r *report) append(d time.Duration) {
+	r.Lock()
+	defer r.Unlock()
+	r.vals = append(r.vals, float64(d.Milliseconds()))
+	if d < r.min {
+		r.min = d
 	}
-	return min
+	if d > r.max {
+		r.max = d
+	}
 }
 
-func (r report) averageDuration() (float64, error) {
-	vals := stats.Float64Data{}
-	for _, req := range r.reqs {
-		vals = append(vals, float64(req.Duration.Milliseconds()))
-	}
-	avg, err := stats.Mean(vals)
-	if err != nil {
-		return 0, err
-	}
-	return avg, nil
-}
-
-func (r report) medianDuration() (float64, error) {
-	vals := stats.Float64Data{}
-	for _, req := range r.reqs {
-		vals = append(vals, float64(req.Duration.Milliseconds()))
-	}
-	avg, err := stats.Median(vals)
-	if err != nil {
-		return 0, err
-	}
-	return avg, nil
-}
-
-func (r report) p95Duration() (float64, error) {
-	vals := stats.Float64Data{}
-	for _, req := range r.reqs {
-		vals = append(vals, float64(req.Duration.Milliseconds()))
-	}
-	avg, err := stats.Percentile(vals, 95)
-	if err != nil {
-		return 0, err
-	}
-	return avg, nil
-}
-
-func (r report) TotalTime() time.Duration {
-	return r.totalDuration
-}
-
-func (r report) NumRequest() int {
-	return len(r.reqs)
-}
-
-func (r report) Render() {
-	p50, err := r.averageDuration()
+func (r *report) Render() {
+	mean, err := stats.Mean(r.vals)
 	if err != nil {
 		log.Fatalf("error generating average for the report %v", err)
 	}
-	median, err := r.medianDuration()
+	median, err := stats.Median(r.vals)
 	if err != nil {
 		log.Fatalf("error generating median for the report %v", err)
 	}
-	p95, err := r.p95Duration()
+	p95, err := stats.Percentile(r.vals, 95)
 	if err != nil {
 		log.Fatalf("error generating p95 for the report %v", err)
 	}
 	data := [][]string{
-		{"Requests Count", fmt.Sprintf("%d", r.NumRequest())},
-		{"Total Duration", fmt.Sprintf("%d ms", r.TotalTime().Milliseconds())},
-		{"Average Duration", fmt.Sprintf("%d ms", int(p50))},
+		{"Requests Count", fmt.Sprintf("%d", len(r.vals))},
+		{"Total Duration", fmt.Sprintf("%d ms", r.totalDuration.Milliseconds())},
+		{"Average Duration", fmt.Sprintf("%d ms", int(mean))},
 		{"Median Duration", fmt.Sprintf("%d ms", int(median))},
-		{"Minimum Duration", fmt.Sprintf("%d ms", r.minDuration().Duration.Milliseconds())},
-		{"Max Duration", fmt.Sprintf("%d ms", r.maxDuration().Duration.Milliseconds())},
+		{"Minimum Duration", fmt.Sprintf("%d ms", r.min.Milliseconds())},
+		{"Max Duration", fmt.Sprintf("%d ms", r.max.Milliseconds())},
 		{"P95 Duration", fmt.Sprintf("%d ms", int(p95))},
 	}
 
@@ -115,10 +75,4 @@ func (r report) Render() {
 	table.SetRowLine(true)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
-}
-
-type requestInfo struct {
-	Query      Query
-	Duration   time.Duration
-	StatusCode int
 }

@@ -19,13 +19,10 @@ func NewBenchmarker(address string) *benchmarker {
 	}
 }
 
-func (b *benchmarker) Benchmark(queries []Query) report {
+func (b *benchmarker) Benchmark(queries []Query) *report {
 	var wg sync.WaitGroup
 
-	r := report{
-		reqs: make([]requestInfo, len(queries)),
-	}
-
+	r := NewReport()
 	totalStart := time.Now()
 	for i, query := range queries {
 		wg.Add(1)
@@ -33,14 +30,13 @@ func (b *benchmarker) Benchmark(queries []Query) report {
 			start := time.Now()
 			req, _ := http.NewRequest("GET", b.formatURL(), nil)
 			req.URL.RawQuery = query.formatRangeQuery()
-			resp, err := b.client.Do(req)
+			_, err := b.client.Do(req)
 			if err != nil {
 				fmt.Println("Errored when sending request to the server")
 				return
 			}
-			r.reqs[i].Query = query
-			r.reqs[i].Duration = time.Since(start)
-			r.reqs[i].StatusCode = resp.StatusCode
+			d := time.Since(start)
+			r.append(d)
 			wg.Done()
 		}(i, query)
 	}
