@@ -24,9 +24,9 @@ func (b *benchmarker) Benchmark(queries []Query) *report {
 
 	r := NewReport()
 	totalStart := time.Now()
-	for i, query := range queries {
+	for _, query := range queries {
 		wg.Add(1)
-		go func(i int, query Query) {
+		go func(query Query) {
 			start := time.Now()
 			req, _ := http.NewRequest("GET", b.formatURL(), nil)
 			req.URL.RawQuery = query.formatRangeQuery()
@@ -38,7 +38,7 @@ func (b *benchmarker) Benchmark(queries []Query) *report {
 			d := time.Since(start)
 			r.append(d)
 			wg.Done()
-		}(i, query)
+		}(query)
 	}
 	wg.Wait()
 	r.totalDuration = time.Since(totalStart)

@@ -11,6 +11,7 @@ import (
 
 func main() {
 	fileNamePtr := flag.String("input", "", "path to CSV containing sample queries")
+	promscaleURL := flag.String("url", "http://localhost:9201", "url of promscale if not default")
 	flag.Parse()
 	if *fileNamePtr == "" {
 		log.Fatalln("no input file value provided")
@@ -26,7 +27,7 @@ func main() {
 		log.Fatalf("error parsing file %v", err)
 	}
 
-	bench := benchmark.NewBenchmarker("http://localhost:9201")
+	bench := benchmark.NewBenchmarker(*promscaleURL)
 	report := bench.Benchmark(queries)
 	report.Render()
 }

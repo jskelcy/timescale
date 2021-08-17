@@ -47,15 +47,15 @@ func (r *report) append(d time.Duration) {
 func (r *report) Render() {
 	mean, err := stats.Mean(r.vals)
 	if err != nil {
-		log.Fatalf("error generating average for the report %v", err)
+		log.Printf("error generating average for the report %v", err)
 	}
 	median, err := stats.Median(r.vals)
 	if err != nil {
-		log.Fatalf("error generating median for the report %v", err)
+		log.Printf("error generating median for the report %v", err)
 	}
 	p95, err := stats.Percentile(r.vals, 95)
 	if err != nil {
-		log.Fatalf("error generating p95 for the report %v", err)
+		log.Printf("error generating p95 for the report %v", err)
 	}
 	data := [][]string{
 		{"Requests Count", fmt.Sprintf("%d", len(r.vals))},
