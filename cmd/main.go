@@ -20,6 +20,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Couldn't open the file %v", err)
 	}
+	if *promscaleURL == "" {
+		*promscaleURL = "http://localhost:9201"
+	}
 
 	p := parser.NewCSVParser(file)
 	queries, err := p.Parse()
