@@ -4,7 +4,11 @@ Promscale Benchmark is a go application which benchmarks a Promscale based on a 
 
 ## Usage
 
-Running the project assumes Promscale is exposed locally at 9201. Follow the Promscale docker installation guide for the simplest setup. Once Promscale is available use the following command to run a benchmark, where `input` is the CSV file containing desired queries:
+Running the project assumes Promscale is exposed locally at 9201. Follow the Promscale docker installation guide for the simplest setup. Running the application using default configuration can be done as follows:
+```
+make run
+```
+The `input` argument can be set providing CSV file containing desired queries, if no `input` is provided the `obs-queries.csv` file will be used by default.:
 ```
 make run input=obs-queries.csv
 ```

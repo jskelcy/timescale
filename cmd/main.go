@@ -14,7 +14,8 @@ func main() {
 	promscaleURL := flag.String("url", "http://localhost:9201", "url of promscale if not default")
 	flag.Parse()
 	if *fileNamePtr == "" {
-		log.Fatalln("no input file value provided")
+		log.Printf("no input file value provided, using obs-queries.csv")
+		*fileNamePtr = "obs-queries.csv"
 	}
 	file, err := os.Open(*fileNamePtr)
 	if err != nil {
