@@ -22,6 +22,7 @@ type report struct {
 	totalDuration time.Duration
 	min           time.Duration
 	max           time.Duration
+	failCount     int
 }
 
 func NewReport() *report {
@@ -44,6 +45,12 @@ func (r *report) append(d time.Duration) {
 	}
 }
 
+func (r *report) addFailure() {
+	r.Lock()
+	defer r.Unlock()
+	r.failCount = r.failCount + 1
+}
+
 func (r *report) Render() {
 	mean, err := stats.Mean(r.vals)
 	if err != nil {
@@ -58,7 +65,8 @@ func (r *report) Render() {
 		log.Printf("error generating p95 for the report %v", err)
 	}
 	data := [][]string{
-		{"Requests Count", fmt.Sprintf("%d", len(r.vals))},
+		{"Successful Requests Count", fmt.Sprintf("%d", len(r.vals))},
+		{"Failed Request Count", fmt.Sprintf("%d", r.failCount)},
 		{"Total Duration", fmt.Sprintf("%d ms", r.totalDuration.Milliseconds())},
 		{"Average Duration", fmt.Sprintf("%d ms", int(mean))},
 		{"Median Duration", fmt.Sprintf("%d ms", int(median))},

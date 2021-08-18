@@ -27,17 +27,21 @@ func (b *benchmarker) Benchmark(queries []Query) *report {
 	for _, query := range queries {
 		wg.Add(1)
 		go func(query Query) {
+			defer wg.Done()
 			start := time.Now()
 			req, _ := http.NewRequest("GET", b.formatURL(), nil)
 			req.URL.RawQuery = query.formatRangeQuery()
-			_, err := b.client.Do(req)
+			resp, err := b.client.Do(req)
 			if err != nil {
 				fmt.Println("Errored when sending request to the server")
 				return
 			}
+			if resp.StatusCode > 200 {
+				r.addFailure()
+				return
+			}
 			d := time.Since(start)
 			r.append(d)
-			wg.Done()
 		}(query)
 	}
 	wg.Wait()
